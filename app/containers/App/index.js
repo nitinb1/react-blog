@@ -7,22 +7,65 @@
  *
  */
 
-import React from 'react';
-import { Switch, Route } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Switch, Route, BrowserRouter as Router } from 'react-router-dom';
 
+import PropTypes from 'prop-types';
+import { connect } from 'react-redux';
+import { compose } from 'redux';
+import { useInjectSaga } from 'utils/injectSaga';
+import { useInjectReducer } from 'utils/injectReducer';
 import HomePage from 'containers/HomePage/Loadable';
+import CategoryPage from 'containers/CategoryPage/Loadable';
+import PostPage from 'containers/PostPage/Loadable';
 import NotFoundPage from 'containers/NotFoundPage/Loadable';
-
+import Header from 'components/Header';
+import { loadRecentPosts, loadCategories } from './actions';
+import reducer from './reducer';
+import saga from './saga';
 import GlobalStyle from '../../global-styles';
 
-export default function App() {
+export function App({ onLoadRecentPosts, onLoadCategories }) {
+  useInjectReducer({ key: 'App', reducer });
+  useInjectSaga({ key: 'App', saga });
+  useEffect(() => {
+    onLoadRecentPosts();
+    onLoadCategories();
+  }, []);
+
+  // const data = useSelector(state => state.App.postData);
+  // console.log(data);
   return (
-    <div>
-      <Switch>
-        <Route exact path="/" component={HomePage} />
-        <Route component={NotFoundPage} />
-      </Switch>
+    <Router>
+      <Header>
+        <Switch>
+          <Route exact path="/" component={HomePage} />
+          <Route exact path="/home" component={HomePage} />
+          <Route exact path="/category/:category" component={CategoryPage} />
+          <Route exact path="/:slug" component={PostPage} />
+          <Route component={NotFoundPage} />
+        </Switch>
+      </Header>
       <GlobalStyle />
-    </div>
+    </Router>
   );
 }
+
+App.propTypes = {
+  onLoadRecentPosts: PropTypes.func,
+  onLoadCategories: PropTypes.func,
+};
+
+function mapDispatchToProps(dispatch) {
+  return {
+    onLoadRecentPosts: () => dispatch(loadRecentPosts()),
+    onLoadCategories: () => dispatch(loadCategories()),
+  };
+}
+
+const withConnect = connect(
+  null,
+  mapDispatchToProps,
+);
+
+export default compose(withConnect)(App);
